@@ -1,0 +1,153 @@
+select case
+         when t.combo_name like '%冀%' then
+          '冀'
+         when t.combo_name like '%沈%' then
+          '沈'
+         when t.combo_name like '%苏%' then
+          '苏'
+         when t.combo_name like '%浙%' then
+          '浙'
+         when t.combo_name like '%兰%' then
+          '兰'
+         when t.combo_name like '%潮汕%' then
+          '潮汕'
+         else
+          t.combo_name
+       end region,
+	decode(t1.buy_platform,
+              1,
+              '绿翼商城',
+              2,
+              '淘宝',
+              11,
+              '携程',
+              12,
+              '拼多多',
+              13,
+              '京东',
+              14,
+              '飞猪',
+              15,
+              '美团',
+              16,
+              '去哪儿',
+              17,
+              '同程',
+              18,
+              '拼多多万人团') od,
+       case
+         when t.combo_name like '%惠选%' then
+          '惠选'
+         when t.combo_name like '%精选%' then
+          '精选'
+         when t.combo_name like '%优选%' then
+          '优选'
+         when t.combo_name like '%儿童%' then
+          '儿童'
+       end price_level,
+       count(distinct case
+               when t1.create_date >= trunc(sysdate) then
+                ticket_id
+               else
+                null
+             end) num_success_today, --今天销售
+       count(distinct ticket_id) num_success, --累计销售
+       count(distinct case
+               when t1.status = 2 then
+                ticket_id
+               else
+                null
+             end) num_draw, --累计退
+       count(distinct case
+               when t1.status = 1 then
+                ticket_id
+               else
+                null
+             end) num_active, --累计激活
+       count(distinct case
+               when t1.status = 1 and h3.users_id is not null then
+                ticket_id
+               when t1.status = 1 and t1.combo_name like '%儿童%' and
+                    h4.users_id is not null then
+                ticket_id
+               else
+                null
+             end) num_use, --累计使用
+       sum(t1.combo_price) combo_price,
+       sum(case
+             when t1.status = 2 then
+              t1.combo_price
+             else
+              0
+           end) combo_price_draw
+  from yhq.cq_yhq_unlimited_combo@to_air t1
+  join dw.adt_combo_product t on regexp_substr(t1.combo_id,'[0-9]+') = t.combo_id
+  left join (select users_id, create_id, count(1)
+               from yhq.cq_new_yhq_relation@to_air
+              where status = 1
+                and create_id in (11166, 11165, 11164, 11163, 11162, 11161,
+                     11160, 11159, 11158, 11148, 11147, 11146,
+                     11145, 11144, 11143, 11142, 11140, 11139)
+                and create_date >=to_date('2020-11-08', 'yyyy-mm-dd')
+              group by users_id, create_id) h3 on t1.yhq_batch_id =
+                                                  h3.create_id
+                                              and t1.user_id = h3.users_id
+  left join (select distinct t1.users_id
+               from dw.fact_combo_ticket t1
+              where t1.combo_name like '%儿童%'
+                and t1.combo_vision = '套票2.0') h4 on t1.user_id =
+                                                     h4.users_id
+ where t1.create_date >= to_date('2020-11-08', 'yyyy-mm-dd')
+   and t1.status < 3
+   and t1.combo_price >= 9
+   and t.combo_vision = 'V2'
+ group by case
+            when t.combo_name like '%冀%' then
+             '冀'
+            when t.combo_name like '%沈%' then
+             '沈'
+            when t.combo_name like '%苏%' then
+             '苏'
+            when t.combo_name like '%浙%' then
+             '浙'
+            when t.combo_name like '%兰%' then
+             '兰'
+            when t.combo_name like '%潮汕%' then
+             '潮汕'
+            else
+             t.combo_name
+          end,
+          case
+            when t.combo_name like '%惠选%' then
+             '惠选'
+            when t.combo_name like '%精选%' then
+             '精选'
+            when t.combo_name like '%优选%' then
+             '优选'
+            when t.combo_name like '%儿童%' then
+             '儿童'
+          end,decode(t1.buy_platform,
+              1,
+              '绿翼商城',
+              2,
+              '淘宝',
+              11,
+              '携程',
+              12,
+              '拼多多',
+              13,
+              '京东',
+              14,
+              '飞猪',
+              15,
+              '美团',
+              16,
+              '去哪儿',
+              17,
+              '同程',
+              18,
+              '拼多多万人团') ;
+			  
+
+		  
+		  

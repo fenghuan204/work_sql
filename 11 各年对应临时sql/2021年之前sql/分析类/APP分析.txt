@@ -1,0 +1,56 @@
+select trunc(t.order_date) 订单日,
+       case when t.ex_nfd1 in(3,8) then 'IOS'
+            when t.ex_nfd1 in(4,9) then 'Andriod'
+            end 渠道,
+       t2.segment_country,
+       t1.seats_name,
+       t2.flights_segment_name,
+       case
+         when t.terminal_id < 0 and t.web_id = 0 and t4.users_id is not null then
+          '黑代'
+         else
+          '非黑代'
+       end 黑代与否,
+       trunc(t.order_date)-t5.reg_day 注册提前期,
+       trunc(t1.r_flights_date)-trunc(t.order_date) 销售提前期,
+       count(1),
+       sum(t1.ticket_price*nvl(t1.r_com_rate,1),
+       sum(t2.price),
+       sum((t1.insurce_fee+t1.other_fee)*nvl(t1.r_com_rate,1))
+  from cqsale.cq_order@to_air t
+  join cqsale.cq_order_head@to_air t1 on t.flights_order_id =
+                                         t1.flights_order_id
+  join dw.da_flight t2 on t1.segment_head_id = t2.segment_head_id
+  left join stg.s_cq_agent_info t3 on t3.agent_id = t.web_id
+  left join dw.da_user_restrict t4 on t4.flag >= 4
+                                  and t4.current_status = 1
+                                  and t4.users_id = t.client_id
+  left join dw.da_b2c_user t5 on t.client_id=t5.users_id
+ where t.order_date >= trunc(sysdate - 7)
+   and t.order_date < sysdate
+   and trunc(t.order_date) in
+       (trunc(sysdate), trunc(sysdate - 7), trunc(sysdate - 1))
+   and to_char(t.order_date, 'hh24:mi:ss') < '19:00:00'
+   and t2.flag <> 2
+   and t1.whole_flight like '9C%'
+   and t.terminal_id = -1
+   and t.web_id = 0
+   and t.ex_nfd1 > 1
+   and t.ex_nfd1 in(3,8,4,9)
+   and t1.seats_name is not null
+   and t1.seats_name not in ('B', 'G', 'G1', 'G2', 'O')
+ group by trunc(t.order_date) ,
+       case when t.ex_nfd1 in(3,8) then 'IOS'
+            when t.ex_nfd1 in(4,9) then 'Andriod'
+            end ,
+       t2.segment_country,
+       t1.seats_name,
+       t2.flights_segment_name,
+       case
+         when t.terminal_id < 0 and t.web_id = 0 and t4.users_id is not null then
+          '黑代'
+         else
+          '非黑代'
+       end ,
+       trunc(t.order_date)-t5.reg_day ,
+       trunc(t1.r_flights_date)-trunc(t.order_date)

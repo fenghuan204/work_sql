@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap
+PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="tgqAuditSpace">
+	<typeAlias alias="tgqAudit" type="com.global.sale.report.pojo.TgqAuditInfo"/>							
+	
+	<!-- 退改签数据审计 1 (查所有和查询正常航班和不正常航班)-->
+	<select id="find" resultClass="tgqAudit" parameterClass="tgqAudit">
+	 <dynamic>
+		<isEqual property="pageResult.isPaging" compareValue="true">
+		SELECT *
+ 			 FROM (SELECT ROW_.*, ROWNUM ROWNUM_
+          FROM (
+          </isEqual>
+       </dynamic>      
+            select t1.log_code,
+		       	t1.order_id,
+		       	t2.name,
+		      	t2.seats_name cabin,
+		       	t3.flights_no,
+		       	to_char(t9.origin_std,'yyyy-mm-dd') flights_date,
+		       	t1.users_id,
+		       	t4.terminal,       	
+		       	t1.modify_date,
+		       	nvl(t1.fy,0) fy1 ,
+		       	nvl(t1.ys_fy,0) ys_fy,
+		       	t1.modify_content memo,
+		       	t9.flights_segment ,
+		       	t1.memo_for_user    	
+				from cq_flights_head_history t1, cq_order_head t2,cq_flights t3,cq_terminal t4 ,cq_user t5,cq_order t6,cq_flights_segment_head t9
+		<dynamic>	  	 	   
+		  	<isNotEmpty property="flights_status">	   			
+	   			<isEqual property="flights_status" compareValue="1">
+	   				,cq_flights_reception t7
+	   			</isEqual>
+	   		</isNotEmpty> 
+	   		<isNotEmpty property="flights_bsale">	   			
+	   			<isEqual property="flights_bsale" compareValue="0">
+	   				,cq_bsale_flights_info t8
+	   			</isEqual>
+	   		</isNotEmpty> 
+   		</dynamic>
+		where t1.flights_order_head_id = t2.flights_order_head_id
+	   	and t2.flights_id=t3.flights_id
+	   	and t1.users_id=t5.users_id
+	   	and t5.terminal_id=t4.terminal_id
+	   	and t6.flights_order_id=t2.flights_order_id
+	   	and t5.company_id=t3.company_id
+	   	and t5.company_id=#company_id#
+	   	and t2.segment_head_id=t9.segment_head_id
+	   	<dynamic>
+	   		<isNotEmpty prepend="and" property="modify_date">
+	   			t1.modify_date >= to_date(#modify_date_start#,'yyyy-mm-dd hh24:mi:ss')
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="modify_date">
+	   			<![CDATA[ t1.modify_date <= to_date(#modify_date_end#,'yyyy-mm-dd hh24:mi:ss') ]]>
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_date">
+	   			t9.origin_std >= to_date(#flights_date#||' 00:00:00','yyyy-mm-dd hh24:mi:ss')
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_date">
+	   			<![CDATA[ t9.origin_std <= to_date(#flights_date#||' 23:59:59','yyyy-mm-dd hh24:mi:ss') ]]>
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_no">
+	   			t3.flights_no=#flights_no#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="order_id">
+	   			t1.order_id=#order_id#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_segment">
+	   			t9.flights_segment=#flights_segment#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="cabin">
+	   			t2.seats_name=#cabin#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="log_code">
+	   			t1.log_code=#log_code#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="terminal">
+	   			t5.terminal_id=#terminal#
+	   		</isNotEmpty>
+	   		<isEmpty prepend="and" property="log_code">
+	   			t1.log_code in (20,21,22)
+	   		</isEmpty>
+	   		<isNotEmpty property="order_group">
+	   			<isEqual prepend="and" property="order_group" compareValue="G">
+	   			t6.order_ifgroup=#order_group#
+	   			</isEqual>			  	
+		   		<isNotEqual prepend="and" property="order_group" compareValue="G">
+		 <![CDATA[  	t6.order_ifgroup <> 'G'   ]]>
+		   		</isNotEqual>
+	   		</isNotEmpty>	   		
+	   		<isNotEmpty property="flights_status">	   			
+	   			<isEqual prepend="and" property="flights_status" compareValue="0">
+	   				not exists (select flights_id from cq_flights_reception where flights_id=t2.flights_id)
+	   			</isEqual>
+	   			<isEqual prepend="and" property="flights_status" compareValue="1">
+					t7.status=1 and t7.FLIGHTS_ID=t2.FLIGHTS_ID
+	   			</isEqual>
+	   		</isNotEmpty>
+	   		<isNotEmpty property="difference">
+	   			<isEqual prepend="and" property="difference" compareValue="0">
+	   				<![CDATA[ t1.ys_fy<>t1.fy]]>
+	   			</isEqual>
+	   			<isEqual prepend="and" property="difference" compareValue="1">
+	   				t1.ys_fy=t1.fy
+	   			</isEqual>
+	   		</isNotEmpty>
+	   		<isNotEmpty property="flights_bsale">	   			
+	   			<isEqual prepend="and" property="flights_bsale" compareValue="0">
+	   			<![CDATA[	
+	   				t3.flights_no = t8.flights_no
+	   				and t2.whole_segment= t8.from_city||t8.to_city
+					and (t8.b_date is null or t8.b_date <=t9.origin_std)
+					and (t8.e_date is null or t8.e_date + 1>t9.origin_std)	
+					and t8.company_id = t3.company_id
+				]]>
+	   			</isEqual>
+	   			<isEqual prepend="and" property="flights_bsale" compareValue="1">
+	   			<![CDATA[	
+	   				not exists (
+		   				select flights_no from cq_bsale_flights_info where t3.flights_no = flights_no
+						and (b_date is null or b_date <=t9.origin_std)
+						and (e_date is null or e_date + 1 >t9.origin_std)	
+						and company_id = t3.company_id
+					)	
+				]]>
+	   			</isEqual>
+   			</isNotEmpty> 		
+	   	</dynamic>
+	   		order by t3.FLIGHTS_DATE ,t4.terminal,t1.modify_date
+	   	<dynamic>
+	   		<isEqual property="pageResult.isPaging" compareValue="true">
+               ) ROW_
+         <![CDATA[ WHERE ROWNUM <= #pageResult.end#) ]]>
+ 				WHERE ROWNUM_ > #pageResult.start#
+  			</isEqual>
+  		</dynamic>
+	</select>	
+	<select id="getCount" resultClass="java.lang.Integer" parameterClass="tgqAudit">
+		select count(*)
+	  	from cq_flights_head_history t1, cq_order_head t2,cq_flights t3,cq_terminal t4 ,cq_user t5,cq_order t6,cq_flights_segment_head t9
+		<dynamic>
+			<isNotEmpty property="flights_status">	   			
+	   			<isEqual property="flights_status" compareValue="1">
+	   				,cq_flights_reception t7
+	   			</isEqual>
+	   		</isNotEmpty> 
+	   		<isNotEmpty property="flights_bsale">	   			
+	   			<isEqual property="flights_bsale" compareValue="0">
+	   				,cq_bsale_flights_info t8
+	   			</isEqual>
+	   		</isNotEmpty>
+   		</dynamic> 
+		where t1.flights_order_head_id = t2.flights_order_head_id
+	   	and t2.flights_id=t3.flights_id
+	   	and t1.users_id=t5.users_id
+	   	and t5.terminal_id=t4.terminal_id	   	
+	   	and t6.flights_order_id=t2.flights_order_id
+	   	and t5.company_id=t3.company_id
+	   	and t5.company_id=#company_id#
+	   	and t2.segment_head_id=t9.segment_head_id
+	   <dynamic>
+	   		<isNotEmpty prepend="and" property="modify_date">
+	   			t1.modify_date >= to_date(#modify_date_start#,'yyyy-mm-dd hh24:mi:ss')
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="modify_date">
+	   			<![CDATA[ t1.modify_date <= to_date(#modify_date_end#,'yyyy-mm-dd hh24:mi:ss') ]]>
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_date">
+	   			t9.origin_std >= to_date(#flights_date#||' 00:00:00','yyyy-mm-dd hh24:mi:ss')
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_date">
+	   			<![CDATA[ t9.origin_std <= to_date(#flights_date#||' 23:59:59','yyyy-mm-dd hh24:mi:ss') ]]>
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_no">
+	   			t3.flights_no=#flights_no#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="order_id">
+	   			t1.order_id=#order_id#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="flights_segment">
+	   			t9.flights_segment=#flights_segment#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="cabin">
+	   			t2.seats_name=#cabin#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="log_code">
+	   			t1.log_code=#log_code#
+	   		</isNotEmpty>
+	   		<isNotEmpty prepend="and" property="terminal">
+	   			t5.terminal_id=#terminal#
+	   		</isNotEmpty>
+	   		<isEmpty prepend="and" property="log_code">
+	   			t1.log_code in (20,21,22)
+	   		</isEmpty>
+	   		<isNotEmpty property="order_group">
+	   			<isEqual prepend="and" property="order_group" compareValue="G">
+	   			t6.order_ifgroup=#order_group#
+	   			</isEqual>			  	
+		   		<isNotEqual prepend="and" property="order_group" compareValue="G">
+		 <![CDATA[  	t6.order_ifgroup <> 'G'   ]]>
+		   		</isNotEqual>
+	   		</isNotEmpty>	   		
+	   		<isNotEmpty property="flights_status">	   			
+	   			<isEqual prepend="and" property="flights_status" compareValue="0">
+	   				not exists (select flights_id from cq_flights_reception where flights_id=t2.flights_id)
+	   			</isEqual>
+	   			<isEqual prepend="and" property="flights_status" compareValue="1">
+					t7.FLIGHTS_ID=t2.FLIGHTS_ID
+	   			</isEqual>
+	   		</isNotEmpty>
+	   		<isNotEmpty property="difference">
+	   			<isEqual prepend="and" property="difference" compareValue="0">
+	   				<![CDATA[ t1.ys_fy<>t1.fy]]>
+	   			</isEqual>
+	   			<isEqual prepend="and" property="difference" compareValue="1">
+	   				t1.ys_fy=t1.fy
+	   			</isEqual>
+	   		</isNotEmpty>
+	   		<isNotEmpty property="flights_bsale">	   			
+	   			<isEqual prepend="and" property="flights_bsale" compareValue="0">
+	   			<![CDATA[	
+	   				t3.flights_no = t8.flights_no
+	   				and t2.whole_segment= t8.from_city||t8.to_city
+					and (t8.b_date is null or t8.b_date <=t9.origin_std)
+					and (t8.e_date is null or t8.e_date + 1>t9.origin_std)	
+					and t8.company_id = t3.company_id
+				]]>
+	   			</isEqual>
+	   			<isEqual prepend="and" property="flights_bsale" compareValue="1">
+	   			<![CDATA[	
+	   				not exists (
+		   				select flights_no from cq_bsale_flights_info where t3.flights_no = flights_no
+						and (b_date is null or b_date <=t9.origin_std)
+						and (e_date is null or e_date + 1 >t9.origin_std)	
+						and company_id = t3.company_id
+					)	
+				]]>
+	   			</isEqual>
+   			</isNotEmpty> 
+	   	</dynamic>
+	</select>	
+</sqlMap>
+
+
+
+
+
+
+
+
+
+
+
+
+select t1.log_code,
+       t1.order_id,
+       t2.name,
+       t2.seats_name cabin,
+       t3.flights_no,
+       to_char(t9.origin_std, 'yyyy-mm-dd') flights_date,
+       t1.users_id,
+       t4.terminal,
+       t1.modify_date,
+       nvl(t1.fy, 0) fy1,
+       nvl(t1.ys_fy, 0) ys_fy,
+       t1.modify_content memo,
+       t9.flights_segment,
+       t1.memo_for_user
+  from stg.s_cq_flights_head_history t1,
+       stg.s_cq_order_head           t2,
+       stg.s_cq_flights              t3,
+       stg.s_cq_terminal             t4,
+       stg.s_cq_user                 t5,
+       stg.s_cq_order                t6,
+       stg.s_cq_flights_segment_head t9
+ where t1.flights_order_head_id = t2.flights_order_head_id
+   and t2.flights_id = t3.flights_id
+   and t1.users_id = t5.users_id
+   and t5.terminal_id = t4.terminal_id
+   and t6.flights_order_id = t2.flights_order_id
+   and t5.company_id = t3.company_id
+   and t5.company_id = 0
+   and t2.segment_head_id = t9.segment_head_id
+   and t9.origin_std >= to_date('2018-06-01', 'yyyy-mm-dd')
+   and t9.origin_std < to_date('2019-01-01', 'yyyy-mm-dd')
+   and to_char(t9.origin_std, 'mm') in ('06', '12')
+   and t1.log_code in (20, 21, 22)

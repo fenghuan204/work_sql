@@ -1,0 +1,23 @@
+select trunc(t1.money_date) 退票日期,case when t2.flag=2 then '取消航班'
+when t3.province like '%辽宁%' or t4.province like '%辽宁%' then '辽宁'
+when t3.province like '%安徽%' or t4.province like '%安徽%' then '安徽'
+   else '其他' end 航班类型 ,
+   case when  t3.province like '%辽宁%' or t4.province like '%辽宁%' then '辽宁'
+   when t3.province like '%安徽%' or t4.province like '%安徽%' then '安徽'
+   else '其他' end 疫情航线,
+   t2.flights_segment_name 航线,count(1) 票量
+ from dw.da_order_drawback t1
+ join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+ left join hdb.cq_airport t3 on t2.originairport=t3.threecodeforcity
+ left join hdb.cq_airport t4 on t2.destairport=t4.threecodeforcity
+ where t1.money_date>=trunc(sysdate)-8
+   --and trunc(t1.money_date) in(trunc(sysdate)-1-7,trunc(sysdate)-1)
+   and t2.flight_no like '9C%'
+   group by trunc(t1.money_date),case when t2.flag=2 then '取消航班'
+when t3.province like '%辽宁%' or t4.province like '%辽宁%' then '辽宁'
+when t3.province like '%安徽%' or t4.province like '%安徽%' then '安徽'
+   else '其他' end ,
+   case when  t3.province like '%辽宁%' or t4.province like '%辽宁%' then '辽宁'
+   when t3.province like '%安徽%' or t4.province like '%安徽%' then '安徽'
+   else '其他' end ,
+   t2.flights_segment_name

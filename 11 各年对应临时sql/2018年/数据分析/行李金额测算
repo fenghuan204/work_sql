@@ -1,0 +1,107 @@
+#1、散客票价、BG票价
+#2、
+##国内：组合产品均价、BG票价
+##国际产品收益平衡点（损失+目前收入=5公斤平均金额*行李重量*人数）
+
+
+ select t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end 类型,count(1),sum(t1.ticket_price)
+ from dw.fact_recent_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id = t2.segment_head_id
+  left join dw.da_restrict_userinfo t3 on t1.client_id = t3.users_id
+  left join dw.dim_segment_type t4 on t2.route_Id = t4.route_Id and t2.h_route_id = t4.h_route_id
+ where t2.flag <> 2
+   and t1.flights_date >= to_date('2017-11-01', 'yyyy-mm-dd')
+   and t1.flights_date <= to_date('2018-11-01', 'yyyy-mm-dd')
+   and t1.flag_id in(3,5,40,41)
+   and t1.seats_name is not null
+   and t1.seats_name <>'O'
+   and t1.seat_type='普通座'
+   and t2.oversale>0
+   and t2.oversale-t2.bgo_plan+t2.o_Plan>0
+   and t2.bgo_plan-t2.o_plan>0
+   group by t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end;
+ 
+ 
+ 
+ 
+  select t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end,t1.seat_type,count(1),sum(t1.ticket_price)
+ from dw.fact_recent_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id = t2.segment_head_id
+  left join dw.da_restrict_userinfo t3 on t1.client_id = t3.users_id
+  left join dw.dim_segment_type t4 on t2.route_Id = t4.route_Id and t2.h_route_id = t4.h_route_id
+ where t2.flag <> 2
+   and t1.flights_date >= to_date('2018-04-01', 'yyyy-mm-dd')
+   and t1.flights_date <= to_date('2018-11-01', 'yyyy-mm-dd')
+   and t1.flag_id in(3,5,40,41)
+   and t1.seats_name is not null
+   and t1.seats_name <>'O'
+   and t2.oversale>0
+   and t2.oversale-t2.bgo_plan+t2.o_Plan>0
+   and t2.bgo_plan-t2.o_plan>0
+   group by t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end,t1.seat_type;
+
+
+
+
+国际航线收益平衡点结算
+
+select /*+paralle(4) */
+to_char(h1.flights_date,'yyyymm'),h1.LUGGAGE_WEIGHT,sum(book_num),sum(book_fee),sum(nvl(ticketnum,0)) ticketnum
+from(
+select  
+t1.flights_date,t1.flights_order_id,min(t1.LUGGAGE_WEIGHT) LUGGAGE_WEIGHT,sum(t1.book_num) book_num,sum(t1.book_fee) book_fee
+  from dw.fact_other_order_detail t1
+ where t1.flights_date >= to_date('2017-11-01', 'yyyy-mm-dd')
+   and t1.flights_date <  to_date('2018-11-01', 'yyyy-mm-dd')
+   and t1.company_id = 0
+   and t1.flag_id in (3, 5, 40, 41)
+   and t1.xtype_id in(6,10,17)
+   and t1.seats_name in('B','G1','G','G2')
+   and t1.nationflag in('区域','国际')
+   and ((t1.nationflag='区域' and t1. LUGGAGE_WEIGHT||t1.book_price not in(580,10150,15260,20380,25450,30600,35700,40850))
+   or (t1.nationflag='国际' and t1.LUGGAGE_WEIGHT||t1.book_price not in(5130,10200,20300,30400,40500)))
+   group by t1.flights_date,t1.flights_order_id)h1
+   
+   left join(select  
+t1.flights_date,t1.flights_order_id,count(1) ticketnum
+  from dw.fact_order_detail t1
+ where t1.flights_date >= to_date('2017-11-01', 'yyyy-mm-dd')
+   and t1.flights_date <  to_date('2018-11-01', 'yyyy-mm-dd')
+   and t1.company_id = 0
+   and t1.flag_id in (3, 5, 40, 41)
+   and t1.seats_name in('B','G1','G','G2')
+   and t1.nationflag in('区域','国际')
+   group by t1.flights_date,t1.flights_order_id)h2 
+   on h1.flights_date=h2.flights_date and h1.flights_order_id=h2.flights_order_id
+   group by to_char(h1.flights_date,'yyyymm'),h1.LUGGAGE_WEIGHT;
+
+
+
+
+#BG人均辅收及散客人均辅收
+
+select to_char(t1.flights_date,'yyyymm'),t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end,t1.seat_type,count(1),sum(t1.ticket_price),
+ sum(nvl(t6.booknum,0)) booknum,sum(nvl(t6.bookfee,0)) bookfee,
+  sum(t6.booknum) booknum,sum(t6.bookfee) bookfee 
+ from dw.fact_recent_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id = t2.segment_head_id
+  left join dw.da_restrict_userinfo t3 on t1.client_id = t3.users_id
+  left join dw.dim_segment_type t4 on t2.route_Id = t4.route_Id and t2.h_route_id = t4.h_route_id
+  left join (select t5.flights_order_head_id,sum(t5.book_num) booknum,sum(t5.book_fee) bookfee
+                 from dw.fact_other_order_detail t5
+                 where  t5.flights_date >= to_date('2017-04-01', 'yyyy-mm-dd')
+   and t5.flights_date < to_date('2018-11-01', 'yyyy-mm-dd')
+   and t5.xtype_id in(6,10,17)
+   group by t5.flights_order_head_id)t6 on t6.flights_order_head_id=t1.flights_order_head_id   
+ where t2.flag <> 2
+   and t1.flights_date >= to_date('2017-04-01', 'yyyy-mm-dd')
+   and t1.flights_date < to_date('2018-11-01', 'yyyy-mm-dd')
+   and t1.flag_id in(3,5,40,41)
+   and t1.seats_name is not null
+   group by to_char(t1.flights_date,'yyyymm'),t2.area_type,case when t1.seats_name in('B','G','G1','G2') then 'BG'
+ else '非BG' end,t1.seat_type;

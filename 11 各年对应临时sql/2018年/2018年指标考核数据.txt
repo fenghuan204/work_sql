@@ -1,0 +1,119 @@
+
+--绩效考核数据
+
+
+--取里面的执行航班数
+
+select sum(l_time) 轮档时间,sum(t1.run_airplane_count) 运行飞机数,sum(t1.l_airplane_normal) 飞机利用率,
+sum(l_time)/sum(t1.run_airplane_count) 计算飞机利用率,sum(t1.plan_flight_count) 计划航班数,sum(t1.exec_flight_count) 执行航班数
+  from stg.f_day_statistics t1
+  where date_time>=to_date('2017-10-01','yyyy-mm-dd')
+    and date_time< to_date('2017-11-01','yyyy-mm-dd');
+    
+    
+	--取飞机架数
+    select flight_count 飞机架数,h1.run_airplane_count 执行架数
+     from stg.f_day_statistics h1
+     where date_time=to_date('2017-10-30','yyyy-mm-dd');
+     
+--- 全部
+	
+  select sum(t2.checkin_s_mile)/10000 ASK万座公里,sum(t2.bj_ticket_income+t2.it_ticket_income)/10000 机票收入,
+sum(t2.bj_ad_fy_income+t2.it_ad_fy_income)/10000 燃油收入,sum(t2.round_time) 轮档时间,sum(t2.round_time)/2211 飞机利用率,
+sum(t2.checkin_num)  乘机人数
+ from hdb.recent_flights_cost t2
+ where t2.flight_date>=to_date('2017-10-01','yyyy-mm-dd')
+   and t2.flight_date< to_date('2017-11-01','yyyy-mm-dd')
+   and t2.total_cost>0
+   
+   
+   ---商务经济座数据
+   
+   lect to_char(t2.flights_date,'yyyymm'),count(1)
+   from dw.fact_order_detail t2
+   where t2.flights_date>=to_date('2017-10-01','yyyy-mm-dd')
+     and t2.flights_date< to_date('2017-12-01','yyyy-mm-dd')
+     and t2.is_swj=1
+     and t2.company_id=0
+     and t2.flag_id=40
+     group by to_char(t2.flights_date,'yyyymm')
+	 
+	 
+	 ---渠道占比
+	 
+	 select /*+parallel(4) */
+to_char(t1.flights_date,'yyyymm'),
+ case when t1.channel in('网站','手机') then '线上渠道'
+ else '线下' end,
+ case when t1.sub_channel like '%CAACSC%' then 'B2G机构客户'
+when regexp_like(t1.sub_channel,'(宝钢国旅)|(中兴)|(金色世纪)|(阿斯兰)|(胜意)') then 'TMC'
+when t1.channel='手机' and t1.station_id =2 then 'M网站'
+            when t1.channel='手机' and t1.station_id in(5,10) then '微信'
+            when t1.channel='手机' and t1.station_id >2 then 'APP'
+            else t1.channel end channel,
+        count(1)  ticket       
+   from dw.fact_order_detail t1
+   join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+   where t1.flights_date>=to_date('2017-10-01','yyyy-mm-dd')
+     and t1.flights_date< to_date('2017-12-01','yyyy-mm-dd')
+     and t1.company_id=0
+     and t1.seats_name is not null
+     
+     and t1.seats_name not in('B','G','G1','G2','O')
+  group by to_char(t1.flights_date,'yyyymm'),
+ case when t1.channel in('网站','手机') then '线上渠道'
+ else '线下' end,
+ case when t1.sub_channel like '%CAACSC%' then 'B2G机构客户'
+when regexp_like(t1.sub_channel,'(宝钢国旅)|(中兴)|(金色世纪)|(阿斯兰)|(胜意)') then 'TMC'
+when t1.channel='手机' and t1.station_id =2 then 'M网站'
+            when t1.channel='手机' and t1.station_id in(5,10) then '微信'
+            when t1.channel='手机' and t1.station_id >2 then 'APP'
+            else t1.channel end
+			
+
+			
+---乘机人二次转化
+
+select count(distinct t1.mobile)
+from dw.da_b2c_user t1
+join dw.fact_mobile_statistics t2 on t1.mobile=t2.mobile
+where t1.mobile<>'-'
+and t1.reg_day>=to_date('2017-11-01','yyyy-mm-dd')
+and t1.reg_day< to_date('2017-12-01','yyyy-mm-dd')
+and t1.reg_day>=t2.min_flightdate
+
+
+--各渠道人均辅收金额
+
+select to_char(t1.flights_date,'yyyymm'),case when t1.seats_name in('B','G','G1','G2') then 'BG'
+else '非BG' end,case when t1.channel='手机' and t1.station_id=2 then 'M网站'
+when t1.channel ='手机' and t1.station_id  in(5,10) then '微信'
+else t1.channel end,0,sum(t1.book_fee)
+from dw.fact_other_order_detail t1
+where t1.flights_date>=to_date('2016-11-01','yyyy-mm-dd')
+  and t1.flights_date< to_date('2017-12-01','yyyy-mm-dd')
+  and t1.company_id=0
+  and t1.flag_id =40
+  group by to_char(t1.flights_date,'yyyymm'),case when t1.seats_name in('B','G','G1','G2') then 'BG'
+else '非BG' end,case when t1.channel='手机' and t1.station_id=2 then 'M网站'
+when t1.channel ='手机' and t1.station_id  in(5,10) then '微信'
+else t1.channel end
+  
+union all 
+select to_char(t1.flights_date,'yyyymm'),case when t1.seats_name in('B','G','G1','G2') then 'BG'
+else '非BG' end,case when t1.channel='手机' and t1.station_id=2 then 'M网站'
+when t1.channel ='手机' and t1.station_id  in(5,10) then '微信'
+else t1.channel end,count(1),0
+from dw.fact_order_detail t1
+where t1.flights_date>=to_date('2016-11-01','yyyy-mm-dd')
+  and t1.flights_date< to_date('2017-12-01','yyyy-mm-dd')
+  and t1.company_id=0
+  and t1.seats_name is not null
+  and t1.flag_id =40
+  group by to_char(t1.flights_date,'yyyymm'),case when t1.seats_name in('B','G','G1','G2') then 'BG'
+else '非BG' end,case when t1.channel='手机' and t1.station_id=2 then 'M网站'
+when t1.channel ='手机' and t1.station_id  in(5,10) then '微信'
+else t1.channel end
+
+
+   

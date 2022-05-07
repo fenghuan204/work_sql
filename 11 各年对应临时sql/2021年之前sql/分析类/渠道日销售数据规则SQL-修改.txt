@@ -1,0 +1,141 @@
+ select to_char(t.order_date, 'yyyy-MM-dd') orderDate,
+       count(t1.flights_order_head_id) ticketNum,
+       replace(replace(replace(replace(r.flights_segment_name,'---','－'),'--','－'),'-','－'),'—','－')  flightSegment,
+       case
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 1 then
+          1  
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 2 then
+          2  
+        when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 and regexp_like(t6.terminal,'(CAACSC)|(95524)|(机构客户)|(集团客户)')then
+          7
+         when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 then
+          3   
+         when t.terminal_id in (300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) then
+          4  
+         when t.terminal_id not in (-1,-11,300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) 
+         and t.web_id = 0 AND NOT regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') then
+          5  
+         when t.web_id <> 0 and t.terminal_id >0 then
+          6   
+          when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=5 then
+          7   
+          WHEN t.terminal_id>0 AND t.web_id=0 AND regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') THEN 
+          7
+         else
+          0
+       end terminal
+  from cqsale.cq_order t
+  join cqsale.cq_order_head t1
+    on t.flights_order_id = t1.flights_order_id 
+  join cqsale.cq_flights_segment_head s
+    on t1.segment_head_id = s.segment_head_id
+  join cqsale.cq_flights_segment_route r on r.route_id = s.route_id
+  left JOIN cqsale.cq_order_origin_type t4
+    on t.ex_nfd1 = t4.station_id
+  left join cqsale.cq_agent_info t5
+    on t.web_id = t5.agent_id
+  LEFT JOIN cqsale.cq_terminal t6    
+    ON t.terminal_id=t6.terminal_id
+ where t.order_date between
+        to_date(#startDate# || '00:00:00', 'yyyy-mm-dd hh24:mi:ss') and
+       to_date(#endDate# || '23:59:59', 'yyyy-mm-dd hh24:mi:ss')
+   and t1.flag_id in (3, 5, 40)
+   and t1.virtal_segment_head_id=0
+   and t1.seats_name not in ('B', 'G', 'G1', 'G2', 'O')
+   AND t1.whole_flight LIKE '9C%'    
+ group by to_char(t.order_date, 'yyyy-MM-dd'),
+          replace(replace(replace(replace(r.flights_segment_name,'---','－'),'--','－'),'-','－'),'—','－'),
+         case
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 1 then
+          1  
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 2 then
+          2  
+        when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 and regexp_like(t6.terminal,'(CAACSC)|(95524)|(机构客户)|(集团客户)')then
+          7
+         when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 then
+          3   
+         when t.terminal_id in (300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) then
+          4 
+         when t.terminal_id not in (-1,-11,300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) 
+         and t.web_id = 0 AND NOT regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') then
+          5  
+         when t.web_id <> 0 and t.terminal_id >0 then
+          6   
+          when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=5 then
+          7   
+          WHEN t.terminal_id>0 AND t.web_id=0 AND regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') THEN 
+          7
+         else
+          0
+       end 
+union
+select to_char(t.order_date, 'yyyy-MM-dd') orderDate,
+       count(t1.flights_order_head_id) ticketNum,
+       replace(replace(replace(replace(r.flights_segment_name,'---','－'),'--','－'),'-','－'),'—','－')  flightSegment,
+       case
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 1 then
+          1  
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 2 then
+          2 
+         when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 and regexp_like(t6.terminal,'(CAACSC)|(95524)|(机构客户)|(集团客户)')then
+          7
+         when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 then
+          3   
+         when t.terminal_id in (300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) then
+          4  
+         when t.terminal_id not in (-1,-11,300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) 
+         and t.web_id = 0 AND NOT regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') then
+          5  
+         when t.web_id <> 0 and t.terminal_id >0 then
+          6  
+          when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=5 then
+          7   
+          WHEN t.terminal_id>0 AND t.web_id=0 AND regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') THEN 
+          7
+         else
+          0
+       end  terminal
+  from cqsale.cq_order t
+  join cqsale.cq_order_head t1
+    on t.flights_order_id = t1.flights_order_id
+   join cqsale.cq_flights_segment_head s
+    on t1.segment_head_id = s.segment_head_id
+   join cqsale.cq_flights_segment_route r on r.route_id = s.h_route_id
+  left join cqsale.cq_order_origin_type t4
+    on t.ex_nfd1 = t4.station_id
+    left join cqsale.cq_agent_info t5
+    on t.web_id = t5.agent_id
+    LEFT JOIN cqsale.cq_terminal t6     
+     ON t.terminal_id=t6.terminal_id
+ where t.order_date between
+        to_date(#startDate# || '00:00:00', 'yyyy-mm-dd hh24:mi:ss') and
+       to_date(#endDate# || '23:59:59', 'yyyy-mm-dd hh24:mi:ss')
+   and t1.flag_id in (3, 5, 40)
+   and t1.seats_name not in ('B', 'G', 'G1', 'G2', 'O')
+   and t1.virtal_segment_head_id > 0
+   AND t1.whole_flight LIKE '9C%'  
+ group by to_char(t.order_date, 'yyyy-MM-dd'),
+          replace(replace(replace(replace(r.flights_segment_name,'---','－'),'--','－'),'-','－'),'—','－'),
+         case
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 1 then
+          1  
+         when t.terminal_id <0 and t.web_id = 0 and t4.type = 2 then
+          2 
+        when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 and regexp_like(t6.terminal,'(CAACSC)|(95524)|(机构客户)|(集团客户)')then
+          7
+         when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=1 then
+          3   
+         when t.terminal_id in (300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) then
+          4  
+         when t.terminal_id not in (-1,-11,300,1233,1309,1330,1400,1401,1516,1571,1801,1802,1803,1805,1806,1807,1808) 
+         and t.web_id = 0 AND NOT regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') then
+          5  
+         when t.web_id <> 0 and t.terminal_id >0 then
+          6   
+          when t.web_id <> 0 and t.terminal_id < 0 and t5.agent_type=5 then
+          7   
+          WHEN t.terminal_id>0 AND t.web_id=0 AND regexp_like(t6.terminal,'(95524)|(机构客户)|(集团客户)') THEN 
+          7
+         else
+          0
+       end 

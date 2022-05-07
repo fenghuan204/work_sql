@@ -1,0 +1,51 @@
+---ÒÉËÆ´úÀíÕËºÅ £¨×¢²áIPµØÖ·¶ÔÓ¦ÕËºÅÊý¡¢×¢²áÕËºÅÃÜÂëÎªÍ¬Ò»¸öÕËºÅ£©
+
+select h3.*
+from(
+select h2.*,case when h2.pwdnum>=300 then '×¢²áÃÜÂë'
+when h2.ipnum>=300 then 'IP' end Ê¶±ð·½Ê½,row_number()over(partition by h2.users_Id order by xid) nrow
+from(
+select h1.*
+from(
+select users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(email,'@',2) email2, login_id,sum(count(1))over(partition by register_ip) ipnum,
+sum(count(1))over(partition by LOGIN_PWD) pwdnum,3 xid
+from stg.c_cq_flights_users
+where reg_date>=trunc(sysdate-30)
+and register_ip is not null
+and not regexp_like(register_ip,'^(10.0)|(192.168)|(127.0.0.1)|(0.0.0.0)')
+group by users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(email,'@',2),login_id)h1
+where h1.ipnum>=300
+
+union all
+
+select h1.*
+from(
+select users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(email,'@',2)  email2,login_id,sum(count(1))over(partition by register_ip) ipnum,
+sum(count(1))over(partition by LOGIN_PWD) pwdnum,2
+from stg.c_cq_flights_users
+where reg_date>=trunc(sysdate-30)
+--and not regexp_like(register_ip,'^(10.0)|(192.168)|(127.0.0.1)')
+group by users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(email,'@',2)  ,login_id)h1
+where  h1.pwdnum>=300
+
+
+
+---ÒÉËÆ´úÀíÕËºÅ £¨Ê¹ÓÃËæ»úÓÊÏä×¢²á£©
+union all
+
+
+select users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(t1.email,'@',2) email2,login_id,sum(count(1))over(partition by register_ip) ipnum,
+sum(count(1))over(partition by LOGIN_PWD) pwdnum,1
+from stg.c_cq_flights_users t1
+where reg_date>=trunc(sysdate-30)
+and t1.email is not null
+and split_part(t1.email,'@',2)  in('m.bccto.me','mail.libivan.com','bccto.me','www.bccto.me','dawin.com','chaichuang.com','m.bccto.me','4057.com','vedmail.com',
+'3202.com','cr219.com','oiizz.com','juyouxi.com','68apps.com','a7996.com','jnpayy.com','yidaiyiluwang.com','wca.cn.com','gbf48123.com',
+'qunar.com','my-zelala.net','etc2019.top','asd.com','7nac.cn')
+group by users_id,reg_date,LOGIN_PWD,register_ip,email,split_part(t1.email,'@',2) ,login_id
+)h2)h3
+where h3.nrow=1
+
+
+
+

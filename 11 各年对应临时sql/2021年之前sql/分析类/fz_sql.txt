@@ -1,0 +1,286 @@
+
+---汇总数据
+
+select t.terminal_id terminal_id1,
+       t.web_id web_id1,
+       t.station_id station_id1,
+       case
+         when t.channel = '手机' and t.station_id = 2 then
+          'M网站'
+         when t.channel = '手机' and t.station_id in (5, 10) then
+          '微信'
+         when t.channel = '手机' then
+          'APP'
+         else
+          t.channel
+       end 机票渠道,
+       f.order_day 辅收日期,
+       decode(f.pay_together, 0, '一次', 1, '二次') 是否一次,
+       f.terminal_id terminal_id2,
+       f.web_id web_id2,
+       f.station_id station_id2,
+       case
+         when f.channel = '手机' and f.station_id = 2 then
+          'M网站'
+         when f.channel = '手机' and f.station_id in (5, 10) then
+          '微信'
+         when f.channel = '手机' then
+          'APP'
+         else
+          f.channel
+       end 辅收渠道,
+       case
+         when f.xtype_id in (1, 2, 4, 11) then
+          '保险'
+         when f.xtype_id in (6, 10, 17) then
+          '行李'
+         else
+          f.xtype_name
+       end 产品大类,
+       sum(f.book_num) 产品数量
+  from dw.fact_other_order_detail f
+  join dw.fact_order_detail t on t.flights_order_head_id =
+                                 f.flights_order_head_id
+ where f.company_id = 0
+   and f.order_day >= to_date('2017-08-01', 'yyyy-mm-dd')
+   and f.order_day < to_date('2017-09-14', 'yyyy-mm-dd')
+   and f.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and t.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+ group by t.terminal_id,
+          t.web_id,
+          t.station_id,
+          case
+            when t.channel = '手机' and t.station_id = 2 then
+             'M网站'
+            when t.channel = '手机' and t.station_id in (5, 10) then
+             '微信'
+            when t.channel = '手机' then
+             'APP'
+            else
+             t.channel
+          end,
+          f.order_day,
+          decode(f.pay_together, 0, '一次', 1, '二次'),
+          f.terminal_id,
+          f.web_id,
+          f.station_id,
+          case
+            when f.channel = '手机' and f.station_id = 2 then
+             'M网站'
+            when f.channel = '手机' and f.station_id in (5, 10) then
+             '微信'
+            when f.channel = '手机' then
+             'APP'
+            else
+             f.channel
+          end,
+          case
+            when f.xtype_id in (1, 2, 4, 11) then
+             '保险'
+            when f.xtype_id in (6, 10, 17) then
+             '行李'
+            else
+             f.xtype_name
+          end
+		  
+		  
+----筛选明细数据
+		  
+		  
+select *
+from(
+select f.flights_order_id,f.order_id,f.order_date,f.pay_together,t.order_date main_orderdate,
+t.terminal_id terminal_id1,
+       t.web_id web_id1,
+       t.station_id station_id1,
+       case
+         when t.channel = '手机' and t.station_id = 2 then
+          'M网站'
+         when t.channel = '手机' and t.station_id in (5, 10) then
+          '微信'
+         when t.channel = '手机' then
+          'APP'
+         else
+          t.channel
+       end 机票渠道,
+       decode(f.pay_together, 0, '一次', 1, '二次') 是否一次,
+       f.terminal_id terminal_id2,
+       f.web_id web_id2,
+       f.station_id station_id2,
+       case
+         when f.channel = '手机' and f.station_id = 2 then
+          'M网站'
+         when f.channel = '手机' and f.station_id in (5, 10) then
+          '微信'
+         when f.channel = '手机' then
+          'APP'
+         else
+          f.channel
+       end 辅收渠道,
+       case
+         when f.xtype_id in (1, 2, 4, 11) then
+          '保险'
+         when f.xtype_id in (6, 10, 17) then
+          '行李'
+         else
+          f.xtype_name
+       end 产品大类,
+       sum(f.book_num) 产品数量
+  from dw.fact_other_order_detail f
+  join dw.fact_order_detail t on t.flights_order_head_id =
+                                 f.flights_order_head_id
+ where f.company_id = 0
+   and f.order_day >= to_date('2017-08-01', 'yyyy-mm-dd')
+   and f.order_day < to_date('2017-09-14', 'yyyy-mm-dd')
+   and f.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and t.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+ group by f.flights_order_id,f.order_id,f.order_date,f.pay_together,t.order_date,t.terminal_id,f.pay_together,
+          t.web_id,
+          t.station_id,
+          case
+            when t.channel = '手机' and t.station_id = 2 then
+             'M网站'
+            when t.channel = '手机' and t.station_id in (5, 10) then
+             '微信'
+            when t.channel = '手机' then
+             'APP'
+            else
+             t.channel
+          end,
+           decode(f.pay_together, 0, '一次', 1, '二次'),
+          f.terminal_id,
+          f.web_id,
+          f.station_id,
+          case
+            when f.channel = '手机' and f.station_id = 2 then
+             'M网站'
+            when f.channel = '手机' and f.station_id in (5, 10) then
+             '微信'
+            when f.channel = '手机' then
+             'APP'
+            else
+             f.channel
+          end,
+          case
+            when f.xtype_id in (1, 2, 4, 11) then
+             '保险'
+            when f.xtype_id in (6, 10, 17) then
+             '行李'
+            else
+             f.xtype_name
+          end)hh
+          where hh.机票渠道<>hh.辅收渠道
+          and hh.pay_together=0
+		  
+		  
+		  
+----
+
+
+
+select /*+parallel(4) */
+t.terminal_id terminal_id1,
+       t.web_id web_id1,
+       t.station_id station_id1,
+       case
+         when t.channel = '手机' and t.station_id = 2 then
+          'M网站'
+         when t.channel = '手机' and t.station_id in (5, 10) then
+          '微信'
+         when t.channel = '手机' then
+          'APP'
+         else
+          t.channel
+       end 机票渠道,
+       f.terminal_id terminal_id2,
+       f.web_id web_id2,
+       t3.ex_nfd1 station_id2,
+       case
+         when f.channel = '手机' and f.station_id = 2 then
+          'M网站'
+         when f.channel = '手机' and f.station_id in (5, 10) then
+          '微信'
+         when f.channel = '手机' then
+          'APP'
+         else
+          f.channel
+       end 辅收渠道,
+       t1.terminal,
+       t2.abrv,
+       case
+         when f.xtype_id in (1, 2, 4, 11) then
+          '保险'
+         when f.xtype_id in (6, 10, 17) then
+          '行李'
+         else
+          f.xtype_name
+       end 产品大类,
+       sum(f.book_num) 产品数量
+  from dw.fact_other_order_detail f
+  join dw.fact_order_detail t on t.flights_order_head_id =
+                                 f.flights_order_head_id
+  join stg.s_cq_other_order t3 on f.order_id=t3.order_id
+  left join stg.s_cq_terminal t1 on f.terminal_id=t1.terminal_id
+  left join stg.s_cq_agent_info t2 on f.web_id=t2.agent_id
+ where f.company_id = 0
+   and f.order_day >= to_date('2017-08-01', 'yyyy-mm-dd')
+   and f.order_day < to_date('2017-09-14', 'yyyy-mm-dd')
+   and f.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and t.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and f.pay_together=1
+ group by t.terminal_id ,
+       t.web_id ,
+       t.station_id ,
+       case
+         when t.channel = '手机' and t.station_id = 2 then
+          'M网站'
+         when t.channel = '手机' and t.station_id in (5, 10) then
+          '微信'
+         when t.channel = '手机' then
+          'APP'
+         else
+          t.channel
+       end ,
+       f.terminal_id ,
+       f.web_id ,
+       t3.ex_nfd1 ,
+       case
+         when f.channel = '手机' and f.station_id = 2 then
+          'M网站'
+         when f.channel = '手机' and f.station_id in (5, 10) then
+          '微信'
+         when f.channel = '手机' then
+          'APP'
+         else
+          f.channel
+       end ,
+       t1.terminal,
+       t2.abrv,
+       case
+         when f.xtype_id in (1, 2, 4, 11) then
+          '保险'
+         when f.xtype_id in (6, 10, 17) then
+          '行李'
+         else
+          f.xtype_name
+       end
+	   
+	   select /*+parallel(4) */
+f.flights_order_id,f.order_id,t2.abrv,t2.agent_type,f.channel,t.channel
+  from dw.fact_other_order_detail f
+  join dw.fact_order_detail t on t.flights_order_head_id =
+                                 f.flights_order_head_id
+  join stg.s_cq_other_order t3 on f.order_id=t3.order_id
+  left join stg.s_cq_terminal t1 on f.terminal_id=t1.terminal_id
+  left join stg.s_cq_agent_info t2 on f.web_id=t2.agent_id
+ where f.company_id = 0
+   and f.order_day >= to_date('2017-08-01', 'yyyy-mm-dd')
+   and f.order_day < to_date('2017-08-03', 'yyyy-mm-dd')
+   and f.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and t.flights_date >= to_date('2017-08-01', 'yyyy-mm-dd') - 7
+   and f.pay_together=1
+    and f.terminal_id>0
+    and f.web_id>0
+    and t1.terminal<>t2.abrv   
+
+   

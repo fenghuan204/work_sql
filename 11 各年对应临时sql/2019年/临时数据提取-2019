@@ -1,0 +1,631 @@
+--1、组合产品占比
+
+SELECT to_char(t1.order_day,'yyyy'),to_char(t1.order_day,'mm'),t1.nationflag,t1.seat_type,count(1)
+FROM DW.Fact_Recent_Order_Detail T1
+WHERE T1.ORDER_DAY>=TO_DATE('2018-01-01','YYYY-MM-DD')
+  AND T1.ORDER_DAY< TO_DATE('2019-09-26','YYYY-MM-DD')
+  AND TO_CHAR(T1.ORDER_DAY,'MMDD')>='0101'
+  and to_char(t1.order_day,'mmdd')<='0925'
+  and t1.flag_id in(3,5,40)
+  and t1.seats_name is not null
+  and t1.seats_name not in('B','G','G1','G2','O')
+  group by to_char(t1.order_day,'yyyy'),to_char(t1.order_day,'mm'),t1.nationflag,t1.seat_type;
+
+--2
+
+select t.flights_order_id 订单号,
+t1.name||' '||coalesce(t1.second_name,'') 旅客姓名,
+t1.r_tel 紧急联系电话,
+t1.r_flights_date 航班日期,
+t2.xproduct_name 产品名称,
+case when t3.ORIGIN_AIRPORT='PVG' then '浦东'
+when t3.ORIGIN_AIRPORT='SHA' then '虹桥'
+else t4.city_name end 始发机场,
+t3.ex_cfd1 始发航站楼,
+sum(t1.book_num) 天数,
+count(distinct t.flights_order_id||t1.name||' '||coalesce(t1.second_name,'')) 台数
+from cqsale.cq_other_order@to_air t
+join cqsale.cq_other_order_head@to_air t1 on t.order_id=t1.order_id
+left join cqsale.cq_xproduct@to_air t2 on t1.ex_nfd1=t2.xtype_id and t1.book_id=t2.xproduct_id
+left join cqsale.cq_flights_segment_head@to_air t3 on t3.segment_head_id =t1.segment_head_id
+left join cqsale.cq_city@to_air t4 on t4.threecodeforcity=t3.ORIGIN_AIRPORT
+where t1.r_flights_date >=trunc(sysdate) - 1 - 7
+and t.order_date>=trunc(sysdate)-1
+and t.order_date< trunc(sysdate)
+and t1.ex_nfd1=21
+and t2.xproduct_name like '%环球%'
+and regexp_like(upper(t2.xproduct_name), '(WIFI)|(WF)|(4G)|(上网卡)')
+and t1.whole_flight like '9C%'
+and t1.flag_id in(3,5,40,41)
+group by t.flights_order_id ,
+t1.name||' '||coalesce(t1.second_name,'') ,
+t1.r_tel ,
+t1.r_flights_date ,
+t2.xproduct_name ,
+case when t3.ORIGIN_AIRPORT='PVG' then '浦东'
+when t3.ORIGIN_AIRPORT='SHA' then '虹桥'
+else t4.city_name end,
+t3.ex_cfd1
+order by t1.r_flights_date,t2.xproduct_name,case when t3.ORIGIN_AIRPORT='PVG' then '浦东'
+when t3.ORIGIN_AIRPORT='SHA' then '虹桥'
+else t4.city_name end;
+
+
+
+select t1.whole_flight 航班号,
+t1.whole_segment 航段,
+t1.r_flights_date 航班日期,
+t.flights_order_id 订单号,
+t1.name||' '||coalesce(t1.second_name,'') 旅客姓名,
+t1.r_tel 紧急联系电话,
+t2.xproduct_name 产品名称,
+t1.book_date 使用日期 
+from cqsale.cq_other_order t
+join cqsale.cq_other_order_head t1 on t.order_id=t1.order_id
+left join cqsale.cq_xproduct t2 on t1.ex_nfd1=t2.xtype_id and t1.book_id=t2.xproduct_id
+where t1.r_flights_date =trunc(sysdate) + 2
+and t1.ex_nfd1=20
+and t1.whole_flight like '9C%'
+and t1.flag_id in(3,5,40,41)
+order by t2.xproduct_name,t1.whole_flight;
+
+-----------------------------------------------------------------------泊车
+
+select t1.whole_flight 航班号,
+       t1.whole_segment 航段,
+       t1.flights_date 航班日期,
+       t1.flights_order_id 订单号,
+       t1.traveller_name 旅客姓名,
+       t1.r_tel 紧急联系电话,
+       t1.xproduct_name 产品名称,
+       sum(t1.book_num) 天数
+  from dw.fact_other_order_detail t1
+ where t1.company_id = 0
+   and t1.flights_date >= trunc(sysdate) - 1 - 7
+   and t1.order_day = trunc(sysdate) - 1
+   and t1.xtype_id = 21
+   and t1.xproduct_name like '%泊车%'
+ group by t1.whole_flight,
+          t1.whole_segment,
+          t1.flights_date,
+          t1.flights_order_id,
+          t1.traveller_name,
+          t1.r_tel,
+          t1.xproduct_name
+ order by t1.flights_date, t1.xproduct_name;
+
+
+
+  select t1.whole_flight 航班号,
+t1.whole_segment 航段,
+t1.r_flights_date 航班日期,
+t.flights_order_id 订单号,
+t1.name||' '||coalesce(t1.second_name,'') 旅客姓名,
+t1.r_tel 紧急联系电话,
+t2.xproduct_name 产品名称,
+sum(t1.book_num) 天数
+from cqsale.cq_other_order@to_air t
+join cqsale.cq_other_order_head@to_air t1 on t.order_id=t1.order_id
+left join cqsale.cq_xproduct@to_air t2 on t1.ex_nfd1=t2.xtype_id and t1.book_id=t2.xproduct_id
+where t1.r_flights_date >= trunc(sysdate) - 1 - 7
+and t.order_date>=trunc(sysdate-2)
+and t.order_date< trunc(sysdate)
+and t1.ex_nfd1=21
+and t1.whole_flight like '9C%'
+and t2.xproduct_name like '%泊车%'
+and t1.flag_id in(3,5,40,41)
+group by t1.whole_flight ,
+t1.whole_segment ,
+t1.r_flights_date ,
+t.flights_order_id ,
+t1.name||' '||coalesce(t1.second_name,'') ,
+t1.r_tel ,
+t2.xproduct_name
+order by t1.r_flights_date,t2.xproduct_name;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 
+ select t1.whole_flight 航班号,
+t1.whole_segment 航段,
+t1.r_flights_date 航班日期,
+t.flights_order_id 订单号,
+t1.name||' '||coalesce(t1.second_name,'') 旅客姓名,
+t1.r_tel 紧急联系电话,
+t2.xproduct_name 产品名称,
+t1.book_date 使用日期
+from cqsale.cq_other_order@to_air t
+join cqsale.cq_other_order_head@to_air t1 on t.order_id=t1.order_id
+left join cqsale.cq_xproduct@to_air t2 on t1.ex_nfd1=t2.xtype_id and t1.book_id=t2.xproduct_id
+where t1.r_flights_date> = trunc(sysdate) + 2
+and t1.r_flights_date< trunc(sysdate)
+and t1.ex_nfd1=21
+and t1.whole_flight like '9C%'
+and t2.xproduct_name like '%代办登机牌%'
+and t1.flag_id in(3,5,40,41)
+order by t2.xproduct_name,t1.whole_flight;
+
+
+select t1.whole_flight     航班号,
+       t1.whole_segment    航段,
+       t1.flights_date     航班日期,
+       t1.flights_order_id 订单号,
+       t1.traveller_name   旅客姓名,
+       t1.r_tel            紧急联系电话,
+       t1.xproduct_name    产品名称,
+       t1.book_date        使用日期
+  from dw.fact_other_order_detail t1
+ where t1.company_id = 0
+   and t1.flights_date = trunc(sysdate) + 2
+   and t1.xtype_id = 21
+   and t1.xproduct_name like '%代办登机牌%'
+ order by t1.xproduct_name, t1.whole_flight;
+
+
+
+----------------------------------------------
+
+
+
+select 
+t1.whole_flight 航班号,
+t1.whole_segment 航段,
+t1.r_flights_date 航班日期,
+t4.city_name 始发城市,
+t3.local_std 计划起飞时间,
+t5.city_name 抵达城市,
+t3.local_sta 计划降落时间,
+t.flights_order_id 订单号,
+t1.name||' '||coalesce(t1.second_name,'') 旅客姓名,
+t1.r_tel 紧急联系电话,
+t2.xproduct_name 产品名称,
+case
+         when t2.xproduct_name like '%接送机%' then
+          '始' || t3.ex_cfd1 || '/抵' || t3.ex_cfd2
+         when t2.xproduct_name like '%接机%' then
+          t3.ex_cfd2
+         when t2.xproduct_name like '%送机%' then
+          t3.ex_cfd1
+       end 航站楼,
+       t1.ex_cfd2 地址,
+       t1.book_price 价格
+from cqsale.cq_other_order@to_air t
+join cqsale.cq_other_order_head@to_air t1 on t.order_id=t1.order_id
+left join cqsale.cq_xproduct@to_air t2 on t1.ex_nfd1=t2.xtype_id and t1.book_id=t2.xproduct_id
+left join cqsale.cq_flights_segment_head@to_air t3 on t3.segment_head_id =t1.segment_head_id
+left join cqsale.cq_city@to_air t4 on t4.threecodeforcity=t3.ORIGIN_AIRPORT
+left join cqsale.cq_city@to_air t5 on t5.threecodeforcity=t3.dest_AIRPORT
+where t1.r_flights_date =trunc(sysdate) + 1
+and t1.ex_nfd1=16
+and t1.whole_flight like '9C%'
+and t1.flag_id in(3,5,40,41)
+order by t2.xproduct_name,t1.whole_flight;
+
+
+
+select t1.whole_flight 航班号,
+       t1.whole_segment 航段,
+       t1.flights_date 航班日期,
+       t2.origincity_name 始发城市,
+       t3.local_std 计划起飞时间,
+       t2.destcity_name 抵达城市,
+       t3.local_sta 计划降落时间,
+       t1.flights_order_id 订单号,
+       t1.traveller_name 旅客姓名,
+       t1.r_tel 紧急联系电话,
+       t1.xproduct_name 产品名称,
+       case
+         when t1.xproduct_name like '%接送机%' then
+          '始' || t3.ex_cfd1 || '/抵' || t3.ex_cfd2
+         when t1.xproduct_name like '%接机%' then
+          t3.ex_cfd2
+         when t1.xproduct_name like '%送机%' then
+          t3.ex_cfd1
+       end 航站楼,
+       tt.ex_cfd2 地址,
+       t1.book_price 价格
+  from dw.fact_other_order_detail t1
+  join dw.da_flight t2 on t2.segment_head_id = t1.segment_head_id
+  join stg.s_cq_flights_segment_head t3 on t3.segment_head_id =
+                                           t1.segment_head_id
+  join stg.s_cq_other_order_head tt on tt.other_order_head_id =
+                                       t1.other_order_head_id
+ where t1.company_id = 0
+   and t1.flights_date = trunc(sysdate) + 1
+   and t1.xtype_id = 16
+ order by t1.xproduct_name, t1.whole_flight;
+
+
+
+
+--3
+
+select t1.pay_together,sum(t1.book_fee),count(distinct t1.flights_order_head_id)
+from dw.fact_other_order_detail t1
+where t1.order_day>=trunc(sysdate-7)
+and t1.order_day< trunc(sysdate)
+and t1.seats_name='P2'
+and t1.company_id=0
+group by t1.pay_together;
+
+--4
+
+select to_char(t1.flights_date_1,'yyyy'),to_char(t1.flights_date_1,'mm'),count(1)
+from dw.bi_connect_segment t1
+left join dw.fact_order_detail t2 on t1.flights_order_head_id_1=t2.flights_order_head_id
+where t1.flights_date_1>=to_date('2018-01-01','yyyy-mm-dd') 
+  and t1.flights_date_1< to_date('2019-10-01','yyyy-mm-dd') 
+  and t2.seats_name not in('B','G','G1','G2')
+  group by to_char(t1.flights_date_1,'yyyy'),to_char(t1.flights_date_1,'mm');
+
+--5 中转联程数据
+
+select to_char(t1.flights_date_1,'yyyy'),to_char(t1.flights_date_1,'mm'),count(1)
+from dw.bi_connect_segment t1
+left join dw.fact_order_detail t2 on t1.flights_order_head_id_1=t2.flights_order_head_id
+where t1.flights_date_1>=to_date('2018-01-01','yyyy-mm-dd') 
+  and t1.flights_date_1< to_date('2019-10-01','yyyy-mm-dd') 
+  and t2.seats_name not in('B','G','G1','G2')
+  group by to_char(t1.flights_date_1,'yyyy'),to_char(t1.flights_date_1,'mm');
+
+
+
+--6、夏秋航季数据展示
+
+select '2020年' 年,to_char(h1.flight_date,'mm') 航班月,
+to_char(h1.flight_date,'mmdd') 航班日期,replace(to_char(h1.flight_date,'day'),'星期','') 星期,
+h4.type_segment,
+replace(
+case
+         when instr(h3.wf_segment, '＝', 1, 2) > 0 then
+          split_part(h3.wf_segment, '＝', 1) || '＝' ||
+          split_part(h3.wf_segment, '＝', 3)
+         else
+          h3.wf_segment
+       end,'东京','羽田') 往返航线,h1.segment_code 航段,case when h1.origin_country_id=0 then '出港'
+       else '进港' end 进出港,       
+       h1.flight_no 航班号,h1.segment_country 航线国家,h3.income_type 收益类型,   
+h1.oversale 计划总数,h1.bgo_plan-h1.o_plan BG计划数,h1.oversale-h1.bgo_plan+h1.o_plan 散客计划数
+,hb2.RESULT_CABIN_PRICE 限价,hb2.RESULT_CABIN 限价舱位,h7.avgprice 最低20张机票平均票价,
+   case when h5.segment_code is not null then '两年均有此航线'
+             when h5.segment_code is null then '2019年无此航线' end 航线类型,
+nvl(h2.swnum,0) 散客已销售数,nvl(h2.swprice,0) 散客票价和,nvl(h2.adfy,0) 散客燃油费,nvl(h2.otherfy,0) 散客其他税费,
+nvl(h2.swnum,0)  最终销售数,nvl(h2.swprice,0) +nvl(h2.adfy,0) 最终含油收入
+from dw.da_flight h1
+left join cqrm.bi_segment_result@to_cqrm hb2 on hb2.rule_type=1 and h1.segment_head_id=hb2.segment_head_id
+left join (
+select t1.segment_head_id,sum(case when t1.seats_name not in('B','G','G1','G2') then 1 else 0 end) swnum ,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.ticket_price else 0 end) swprice,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.ad_fy else 0 end) adfy,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.other_fy else 0 end) otherfy            
+  from dw.fact_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+  where t1.flights_date>=to_date('2019-10-27','yyyy-mm-dd')
+    and t1.flights_date<=to_date('2020-03-28','yyyy-mm-dd')
+    and t2.flag<>2
+    and t2.nationflag in('区域','国际')
+    and t1.order_day< trunc(sysdate)
+    and t1.whole_flight like '9C%'
+    group by t1.segment_head_id)h2 on h1.segment_head_id=h2.segment_head_id
+    left join dw.dim_segment_type h3 on h1.route_id=h3.route_id and h1.h_route_id=h3.h_route_id
+    left join hdb.dim_20nation_spring h4 on h1.flight_date=h4.spring_date    
+  left  join (select  distinct segment_code
+                       from  dw.da_flight 
+                             where flag<>2
+                   and flight_date>=to_date('2018-10-28','yyyy-mm-dd')
+                                 and flight_date<=to_date('2019-03-30','yyyy-mm-dd') 
+                 and nationflag in('区域','国际')
+                 and company_id=0
+            )h5 on h1.segment_code=h5.segment_code
+            
+   
+  left join(  
+  select h6.segment_head_id,avg(ticket_price) avgprice
+  from( 
+  select t1.segment_head_id,t1.ticket_price+t1.ad_fy ticket_price,row_number()over(partition by t1.segment_head_id order by t1.ticket_price+t1.ad_fy)  xid         
+  from dw.fact_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+  where t1.flights_date>=to_date('2019-10-27','yyyy-mm-dd')
+    and t1.flights_date<=to_date('2020-03-28','yyyy-mm-dd')
+    and t2.flag<>2
+    and t2.nationflag in('区域','国际')
+    and t1.order_day< trunc(sysdate)
+    and t1.whole_flight like '9C%'
+    and t1.seats_name not in('B','G','G1','G2','O','P2','P3','P4','P5','A','D','Z','I','J')
+    and t1.sex =1
+ )h6 
+    where h6.xid<=20
+    group by h6.segment_head_id)h7 on h1.segment_head_id=h7.segment_head_id  
+    where h1.flight_date>=to_date('2019-10-27','yyyy-mm-dd')
+    and h1.flight_date<=to_date('2020-03-28','yyyy-mm-dd')
+    and h1.flag<>2
+    and h1.nationflag in('区域','国际')
+    and h1.company_id=0
+    
+ 
+union all 
+
+select  tb2.*, tb7.avgprice ,
+case when tb4.segment_code is not null then '两年均有此航线'
+             when tb4.segment_code is null then '2020年无此航线' end 航线类型,
+nvl(tb3.swnum,0) swnum,
+nvl(tb3.swprice,0) swprice,
+nvl(tb3.adfy,0) adfy,
+nvl(tb3.otherfy,0) otherfy,
+nvl(tb5.totalnum,0) totalnum,
+nvl(tb5.totalprice,0) totalprice
+from(
+select  '2019年' year,to_char(t3.spring_date,'mm') smonth,
+to_char(t3.spring_date,'mmdd') sdate,
+replace(to_char(t3.spring_date,'day'),'星期','') sweek,
+t3.type_segment,
+replace(
+case when instr(t4.wf_segment, '＝', 1, 2) > 0 then
+          split_part(t4.wf_segment, '＝', 1) || '＝' ||
+          split_part(t4.wf_segment, '＝', 3)
+         else
+          t4.wf_segment
+       end,'东京','羽田') wf_segment,
+tb1.segment_code,
+case when tb1.origin_country_id=0 then '出港'
+else '进港' end flag1,
+tb1.flight_no,tb1.segment_country,t4.income_type,
+sum(tb1.oversale) oversale,sum(tb1.bgo_plan-tb1.o_plan) bgplan,
+sum(tb1.oversale-tb1.bgo_plan+tb1.o_plan) swplan,
+hb2.RESULT_CABIN_PRICE,hb2.RESULT_CABIN
+  from dw.da_flight tb1
+  join hdb.dim_20nation_spring t3 on tb1.flight_date=t3.corre_date
+  left join dw.dim_segment_type t4 on tb1.route_id=t4.route_id and tb1.h_route_id=t4.h_route_id
+  left join cqrm.bi_segment_result@to_cqrm hb2 on hb2.rule_type=1 and tb1.segment_head_id=hb2.segment_head_id
+  where tb1.flight_date>=to_date('2018-10-28','yyyy-mm-dd')
+    and tb1.flight_date<=to_date('2019-03-30','yyyy-mm-dd') 
+    and tb1.flag<>2
+    and tb1.company_id=0
+    and tb1.nationflag in('区域','国际')
+    group by to_char(t3.spring_date,'mm') ,
+to_char(t3.spring_date,'mmdd') ,
+replace(to_char(t3.spring_date,'day'),'星期',''),
+t3.type_segment,
+replace(
+case when instr(t4.wf_segment, '＝', 1, 2) > 0 then
+          split_part(t4.wf_segment, '＝', 1) || '＝' ||
+          split_part(t4.wf_segment, '＝', 3)
+         else
+          t4.wf_segment
+       end,'东京','羽田') ,
+tb1.segment_code,
+case when tb1.origin_country_id=0 then '出港'
+else '进港' end ,
+tb1.flight_no,tb1.segment_country,t4.income_type,hb2.RESULT_CABIN_PRICE,hb2.RESULT_CABIN)tb2
+left join(
+select to_char(t3.spring_date,'mmdd') sdate,
+t2.segment_code,t2.flight_no,sum(case when t1.seats_name not in('B','G','G1','G2') then 1 else 0 end) swnum ,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.ticket_price else 0 end) swprice,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.ad_fy else 0 end) adfy,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.other_fy else 0 end) otherfy            
+  from dw.fact_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+  join hdb.dim_20nation_spring t3 on t2.flight_date=t3.corre_date  
+  where t1.flights_date>=to_date('2018-10-28','yyyy-mm-dd')
+    and t1.flights_date<=to_date('2019-03-30','yyyy-mm-dd')    
+    and t2.flag<>2
+    and t2.nationflag in('区域','国际')
+    and t1.order_day< add_months(trunc(sysdate),-12)+t3.corre_number
+    and t1.whole_flight like '9C%'
+    group by to_char(t3.spring_date,'mmdd') ,
+t2.segment_code,t2.flight_no)tb3  on tb2.sdate=tb3.sdate and tb2.segment_code=tb3.segment_code and tb2.flight_no=tb3.flight_no
+left  join (select  distinct segment_code
+                       from  dw.da_flight 
+                             where flag<>2
+                   and flight_date>=to_date('2019-10-27','yyyy-mm-dd')
+                                 and flight_date<=to_date('2020-03-28','yyyy-mm-dd') 
+                 and nationflag in('区域','国际')
+                 and company_id=0
+            )tb4 on tb2.segment_code=tb4.segment_code
+left join(
+select to_char(t3.spring_date,'mmdd') sdate,
+t2.segment_code,t2.flight_no,sum(case when t1.seats_name not in('B','G','G1','G2') then 1 else 0 end) totalnum ,
+    sum(case when t1.seats_name not in('B','G','G1','G2') then t1.ticket_price+t1.ad_fy else 0 end) totalprice      
+  from dw.fact_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+  join hdb.dim_20nation_spring t3 on t2.flight_date=t3.corre_date  
+  where t1.flights_date>=to_date('2018-10-28','yyyy-mm-dd')
+    and t1.flights_date<=to_date('2019-03-30','yyyy-mm-dd')    
+    and t2.flag<>2
+    and t2.nationflag in('区域','国际')
+    and t1.whole_flight like '9C%'
+    group by to_char(t3.spring_date,'mmdd') ,
+t2.segment_code,t2.flight_no)tb5  on tb2.sdate=tb5.sdate and tb2.segment_code=tb5.segment_code and tb2.flight_no=tb5.flight_no
+
+
+
+left join
+(
+select tb6.sdate,tb6.segment_code,tb6.flight_no,avg(ticketprice) avgprice 
+from
+(
+select to_char(t3.spring_date,'mmdd') sdate,
+t2.segment_code,t2.flight_no, t1.ticket_price+t1.ad_fy ticketprice,row_number()over(partition by to_char(t3.spring_date,'mmdd'),
+t2.segment_code,t2.flight_no order by t1.ticket_price+t1.ad_fy) xid         
+  from dw.fact_order_detail t1
+  join dw.da_flight t2 on t1.segment_head_id=t2.segment_head_id
+  join hdb.dim_20nation_spring t3 on t2.flight_date=t3.corre_date  
+  where t1.flights_date>=to_date('2018-10-28','yyyy-mm-dd')
+    and t1.flights_date<=to_date('2019-03-30','yyyy-mm-dd')    
+    and t2.flag<>2
+    and t1.seats_name not in('B','G','G1','G2','O','P2','P3','P4','P5','A','D','Z','I','J')
+    and t1.sex =1 
+    and t2.nationflag in('区域','国际')
+    and t1.order_day< add_months(trunc(sysdate),-12)+t3.corre_number
+    and t1.whole_flight like '9C%'
+)tb6
+where tb6.xid<=20
+group by tb6.sdate,tb6.segment_code,tb6.flight_no)tb7  on tb2.sdate=tb7.sdate and tb2.segment_code=tb7.segment_code and tb2.flight_no=tb7.flight_no;
+
+
+--7
+--8
+--9
+--10
+--11
+--12
+--13
+--14
+--15
+--16
+--17
+--18
+--19
+--20
+--21
+--22
+--23
+--24
+--25
+--26
+--27
+--28
+--29
+--30
+--31
+--32
+--33
+--34
+--35
+--36
+--37
+--38
+--39
+--40
+--41
+--42
+--43
+--44
+--45
+--46
+--47
+--48
+--49
+--50
+--51
+--52
+--53
+--54
+--55
+--56
+--57
+--58
+--59
+--60
+--61
+--62
+--63
+--64
+--65
+--66
+--67
+--68
+--69
+--70
+--71
+--72
+--73
+--74
+--75
+--76
+--77
+--78
+--79
+--80
+--81
+--82
+--83
+--84
+--85
+--86
+--87
+--88
+--89
+--90
+--91
+--92
+--93
+--94
+--95
+--96
+--97
+--98
+--99
+--100
+--101
+--102
+--103
+--104
+--105
+--106
+--107
+--108
+--109
+--110
+--111
+--112
+--113
+--114
+--115
+--116
+--117
+--118
+--119
+--120
+--121
+--122
+--123
+--124
+--125
+--126
+--127
+--128
+--129
+--130
+--131
+--132
+--133
+--134
+--135
+--136
+--137
+--138
+--139
+--140
+--141
+--142
+--143
+--144
+--145
+--146
+--147
+--148
+--149
+--150
+--151
+--152
+--153
+--154
+--155
+--156
+--157
+--158
+--159
+--160
+--161
+--162
+--163
+--164
+--165
+--166
+--167
+--168
+--169
+--170
+--171

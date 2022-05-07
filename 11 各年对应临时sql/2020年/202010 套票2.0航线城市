@@ -1,0 +1,83 @@
+select distinct '河北' 类型, t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where regexp_like(t1.province,'河北') 
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
+  
+  
+  union all
+  
+  
+select distinct '江苏',  t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where regexp_like(t1.province,'江苏') 
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
+  
+  union all 
+  
+  select distinct '浙江',  t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where regexp_like(t1.province,'浙江') 
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
+  
+  
+  union all
+  
+  
+  select distinct '沈阳' , t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where   regexp_like(t2.flights_city_name,'沈阳')
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
+  
+  
+  
+    union all
+  
+  
+  select distinct '揭阳',  t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where   regexp_like(t2.flights_city_name,'揭阳')
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
+  
+   union all
+  
+  
+  select distinct '兰州',  t2.origincity_name 始发地,t2.originairport,replace(t2.destcity_name,'黔江','重庆（黔江）') 目的地,t2.destairport
+  from dw.da_flight t2
+  join hdb.Cq_Airport t1 on t1.threecodeforcity=t2.originairport
+ -- left join  hdb.cq_airport t3 on t3.threecodeforcity=t2.destairport
+  where   regexp_like(t2.flights_city_name,'兰州')
+  and t2.flight_date>=trunc(sysdate)
+  and t2.flag=0
+  and t2.nationflag='国内'
+  --and t2.flight_date< to_date('2021-03-31','yyyy-mm-dd')
+  and t2.company_id=0
