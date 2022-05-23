@@ -32155,11 +32155,71 @@ select  to_char(t1.flight_date,'yyyymmdd')||t1.flight_no flightno,min(t1.flag) f
 )
  group by to_char(t1.flight_date,'yyyymmdd')||t1.flight_no)h1;
 
- ------542、
+ ------542、中转旅客信息匹配
+
+select to_char(t1.r_flights_date,'yyyymmdd')||t1.whole_flight||replace(trim(t1.name||coalesce(t1.second_name,'')),' ','')||substr(t1.codeno,length(t1.codeno)-4+1,4),
+max(case when t1.sex=3 then 3 else 0 end) 是否婴儿,
+max(case when t1.flag_id =40 then 40 
+when t1.flag_id in(7,11,12) then 2
+when t1.flag_id in(8,9,10) then 1 
+else 0 end) 状态
+ from cqsale.cq_order_head@to_air t1
+ left join stg.s_cq_order_head_flag t2 on t1.flag_id=t2.flag
+ where t1.r_flights_date>=date'2022-04-01'
+ and t1.r_flights_date<=date'2022-04-30'
+ --and t1.r_flights_date=date'2022-04-16'
+ --and t1.codeno like '6205%2859'
+ and t1.name like '%%'
+ and to_char(t1.r_flights_date,'yyyymmdd')||t1.whole_flight||replace(trim(t1.name||coalesce(t1.second_name,'')),' ','')||substr(t1.codeno,length(t1.codeno)-4+1,4)
+ in('202204309C8711秦英杰1619',
+'202204289C6367谷学领7817',
+'202204289C6367李晓芹7825',
+'202204279C7108李艳红0420',
+'202204269C6232谢程喆0013',
+'202204259C6790林建蒙4016',
+'202204249C6376周浩良929X',
+'202204229C6376张万才0811',
+'202204169C6846龚雪002X',
+'202204149C6306蔺亚龙4519',
+'202204149C6846杨坤伟3228',
+'202204129C6542温飞雪0644'
+)
+group by  to_char(t1.r_flights_date,'yyyymmdd')||t1.whole_flight||replace(trim(t1.name||coalesce(t1.second_name,'')),' ','')||substr(t1.codeno,length(t1.codeno)-4+1,4);
 
 
+ ------543、航班号(XY)+航段(三字码)对应轮档小时、每班变动成本、小时成本
+
+select flights_no,flights_segment,avg(h1.round_time) round_time,avg(vari_cost) vari_cost,sum(h1.vari_cost)/sum(h1.round_time) varicosthour
+from(
+select f.flights_date,
+       f.flights_no,
+       f.flights_segment,
+       f.flights_id,
+       f.segment_head_id,
+       f.round_time,
+       decode(f.ROUTE_FLAG, 0, '直飞', 1, '经停', 2, '同机中转') routeflag,
+       decode(COST_FLAG,
+              0,
+              '直飞',
+              1,
+              '经停分段',
+              2,
+              '同机中转',
+              3,
+              '经停合计') costflag,
+       nvl(F.QJ_FEE_NF, 0) + nvl(F.CAO_FEE, 0) + nvl(F.FUND_MONEY, 0) +
+       nvl(F.FLIGHT_MONEY, 0) + nvl(F.DP_MONEY, 0) vari_cost
+  from cqsale.CQ_FLIGHTS_COST@to_air F
+ where f.flights_date >= trunc(sysdate) - 14
+ and round_time>0
+ and nvl(F.QJ_FEE_NF, 0) + nvl(F.CAO_FEE, 0) + nvl(F.FUND_MONEY, 0) +
+       nvl(F.FLIGHT_MONEY, 0) + nvl(F.DP_MONEY, 0)>0
+ )h1
+ where h1.costflag<>'经停合计'
+ group by flights_no,flights_segment;
  
- ------543、
+  
+
  ------544、
  ------545、
  ------546、
