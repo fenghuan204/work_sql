@@ -32153,9 +32153,12 @@ select  to_char(t1.flight_date,'yyyymmdd')||t1.flight_no flightno,min(t1.flag) f
 '202205039C6472',
 '202205019C8846'
 )
- group by to_char(t1.flight_date,'yyyymmdd')||t1.flight_no)h1
+ group by to_char(t1.flight_date,'yyyymmdd')||t1.flight_no)h1;
 
  ------542、
+
+
+ 
  ------543、
  ------544、
  ------545、
