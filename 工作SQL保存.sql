@@ -32126,9 +32126,35 @@ when hb2.money_fy>0 then '退票收费' end ,
 hb2.费用类型,
 hb2.收费类型;
 
+----------------------------------------20220523-----------------------------------------------------------
+ ------540、4、5月客座率数据提取
+select to_char(t1.flight_date,'yyyymm'),t1.flight_segment,sum(t1.checkin_mile)/sum(t1.checkin_s_mile)
+ from dw.bi_tbl_plf t1
+ where t1.checkin_mile>0
+ and t1.checkin_s_mile>0
+ and t1.flight_date>=date'2022-04-01'
+ and t1.flight_date<=date'2022-05-21'
+ group by to_char(t1.flight_date,'yyyymm'),t1.flight_segment;
+ 
 
- ------540、
- ------541、
+ ------541、服务匹配航班状态
+
+select h1.flightno,decode(h1.flag,0,'正常',1,'受保护',2,'取消')
+ from(
+select  to_char(t1.flight_date,'yyyymmdd')||t1.flight_no flightno,min(t1.flag) flag
+ from dw.da_flight t1
+ where to_char(t1.flight_date,'yyyymmdd')||t1.flight_no
+ in('202203299C8831',
+'202203229C8797',
+'202203149C6107',
+'202205019C8807',
+'202204229C6806',
+'202204269C8970',
+'202205039C6472',
+'202205019C8846'
+)
+ group by to_char(t1.flight_date,'yyyymmdd')||t1.flight_no)h1
+
  ------542、
  ------543、
  ------544、
