@@ -32217,7 +32217,6 @@ select f.flights_date,
  )h1
  where h1.costflag<>'经停合计'
  group by flights_no,flights_segment;
- 
   
 
  ------544、
