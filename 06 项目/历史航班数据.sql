@@ -1,6 +1,5 @@
-﻿
-select whole_flight,flights_segment_name,route_name,wf_segment_name,round_time,
-sum(round_time),sum(fnum) fnum,sum(layout)
+﻿select whole_flight,flights_segment_name,route_name,wf_segment_name,round_time,
+sum(round_time)sumtime,sum(fnum) sumfnum,sum(layout) plannum
 from(
 select tp1.flight_date,tp1.whole_flight,tp1.flightno,tp1.flights_segment_name,
 tp1.route_name,tp1.wf_segment_name,tp1.round_time,tp1.alltime,count(distinct tp1.flights_id) fnum,
