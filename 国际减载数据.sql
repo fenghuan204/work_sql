@@ -1,5 +1,4 @@
 ﻿--订单号 VRWAJG  机票流水号 239806132
---
 
 select p.*,
        sum(p.票数) over(partition by p.航班号, p.航班日期, p.航段 order by p.操作时间, p.机票流水号) 当时总数
